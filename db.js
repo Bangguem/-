@@ -23,3 +23,35 @@ async function connectToMongo() {
         process.exit(1); // 연결 실패 시 프로세스를 종료합니다.
     }
 }
+
+async function fetchUser(userid) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(COLLECTION_NAME);
+    return await collection.findOne({ userid });
+}
+
+async function createUser(newUser) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(COLLECTION_NAME);
+    return await collection.insertOne(newUser);
+}
+
+async function removeUser(userid) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(COLLECTION_NAME);
+    const result = await collection.deleteOne({ userid });
+    return result.deletedCount > 0;
+}
+
+async function closeMongoConnection() {
+    await client.close();
+    console.log('MongoDB 접속 해제');
+}
+
+module.exports = {
+    connectToMongo,
+    fetchUser,
+    createUser,
+    removeUser,
+    closeMongoConnection
+}
