@@ -83,7 +83,8 @@ app.post('/signup', async (req, res) => {
     const newUser = { userid, password: hashedPassword };
     await createUser(newUser);
 
-    res.cookie(USER_COOKIE_KEY, JSON.stringify({ userid: newUser.userid }));
+    const token = generateToken({ userid: newUser.userid });
+    res.cookie('auth_token', token, { httpOnly: true });
     res.redirect('/');
 });
 
