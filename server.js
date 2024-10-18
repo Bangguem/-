@@ -8,11 +8,12 @@ const http = require('http'); // HTTP 서버 모듈 불러오기
 const socketIo = require('socket.io'); // Socket.io 모듈 불러오기
 const server = http.createServer(app); // HTTP 서버 생성
 const io = socketIo(server); // Socket.io 서버를 HTTP 서버에 연결
-const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection } = require('./db');
+const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile } = require('./db');
 const { generateToken, verifyToken } = require('./auth');
 app.use(express.static(path.join(__dirname, 'public'))); // 정적 파일 제공
 app.use(cookieParser()); // 쿠키 파싱
 app.use(express.urlencoded({ extended: true })); // URL-encoded 요청 본문 파싱
+app.use(express.json());
 
 // MongoDB에 연결한 후 서버를 시작합니다.
 connectToMongo().then(() => {
@@ -49,6 +50,7 @@ app.get('/', authenticateJWT, async (req, res) => {
         if (user) {
             res.status(200).send(`
                 <a href="/logout">Log Out</a>
+                <a href="/mypage.html">My Page</a>
                 <a href="/withdraw">Withdraw</a>
                 <h1>id:${user.userid}</h1>
                 `);
@@ -124,5 +126,31 @@ app.get('/withdraw', authenticateJWT, async (req, res) => {
     } catch (error) {
         console.error('Error during withdrawal:', error);
         res.status(500).send('Error during account withdrawal');
+    }
+});
+
+app.post('/mypage', authenticateJWT, async (req, res) => {
+    const userData = req.user;
+
+    if (userData) {
+        const { nickname, birthdate, gender } = req.body;
+
+        try {
+            const userprofile = {
+                userid: userData.userid,
+                nickname,
+                birthdate,
+                gender
+            };
+
+            // MongoDB에 사용자 프로필 저장
+            await createUserprofile(userprofile);
+            res.redirect('/'); // 저장 후 홈 페이지로 이동
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            res.status(500).send('Failed to update profile');
+        }
+    } else {
+        res.status(404).send('User Not Found');
     }
 });
