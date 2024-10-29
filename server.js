@@ -8,13 +8,14 @@ const http = require('http'); // HTTP 서버 모듈 불러오기
 const socketIo = require('socket.io'); // Socket.io 모듈 불러오기
 const server = http.createServer(app); // HTTP 서버 생성
 const io = socketIo(server); // Socket.io 서버를 HTTP 서버에 연결
-const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile } = require('./db');
+const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile, fetchUserProfile } = require('./db');
 const { generateToken, verifyToken } = require('./auth');
 app.use(express.static(path.join(__dirname, 'public'))); // 정적 파일 제공
 app.use(cookieParser()); // 쿠키 파싱
 app.use(express.urlencoded({ extended: true })); // URL-encoded 요청 본문 파싱
 app.use(express.json());
-
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 // MongoDB에 연결한 후 서버를 시작합니다.
 connectToMongo().then(() => {
     app.listen(3000, () => {
@@ -50,7 +51,7 @@ app.get('/', authenticateJWT, async (req, res) => {
         if (user) {
             res.status(200).send(`
                 <a href="/logout">Log Out</a>
-                <a href="/mypage.html">My Page</a>
+                <a href="/mypage">My Page</a>
                 <a href="/withdraw">Withdraw</a>
                 <h1>id:${user.userid}</h1>
                 `);
@@ -87,7 +88,7 @@ app.post('/signup', async (req, res) => {
 
     const token = generateToken({ userid: newUser.userid });
     res.cookie('auth_token', token, { httpOnly: true });
-    res.redirect('/');
+    res.redirect('/userprofile.html');
 });
 
 app.get('/logout', (req, res) => {
@@ -129,7 +130,7 @@ app.get('/withdraw', authenticateJWT, async (req, res) => {
     }
 });
 
-app.post('/mypage', authenticateJWT, async (req, res) => {
+app.post('/userprofile', authenticateJWT, async (req, res) => {
     const userData = req.user;
 
     if (userData) {
@@ -154,3 +155,33 @@ app.post('/mypage', authenticateJWT, async (req, res) => {
         res.status(404).send('User Not Found');
     }
 });
+
+app.get('/mypage', authenticateJWT, async (req, res) => {
+    try {
+        const userData = req.user; // JWT에서 사용자 정보 추출
+        if (!userData) {
+            return res.status(401).send('Unauthorized: No user found');
+        }
+
+        const user = await fetchUserProfile(userData.userid); // 새로 분리한 함수 사용
+
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        res.render('mypage', { user }); // EJS 템플릿에 사용자 정보 전달
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).send('Error fetching user information');
+    }
+});
+
+
+let waitingUsers = [];
+let chatRooms = {};
+
+io.on('connection', (socket) => {
+    console.log(`User connected: ${socket.id}`);
+
+
+})

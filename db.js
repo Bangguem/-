@@ -65,11 +65,23 @@ async function closeMongoConnection() {
     console.log('MongoDB 접속 해제');
 }
 
+async function fetchUserProfile(userid) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(COLLECTION_NAME);
+
+    // 해당 사용자 정보 가져오기 (비밀번호 제외)
+    return await collection.findOne(
+        { userid },
+        { projection: { password: 0 } }
+    );
+}
+
 module.exports = {
     connectToMongo,
     fetchUser,
     createUser,
     removeUser,
     closeMongoConnection,
-    createUserprofile
+    createUserprofile,
+    fetchUserProfile
 }
