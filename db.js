@@ -76,6 +76,65 @@ async function fetchUserProfile(userid) {
     );
 }
 
+async function fetchPuuid(summonerName, tag) {
+    const apiKey = process.env.RIOT_API_KEY;
+    const url = `https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${summonerName}/${tag}?api_key=${apiKey}`;
+    try {
+        const response = await axios.get(url);
+        return response.data.puuid; // Return the `puuid`
+    } catch (error) {
+        console.error('Failed to fetch puuid', error);
+        throw error;
+    }
+}
+
+// Function to fetch summoner information using `puuid`
+async function fetchSummonerIdByPuuid(puuid) {
+    const apiKey = process.env.RIOT_API_KEY;
+    const url = `https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${apiKey}`;
+    try {
+        const response = await axios.get(url);
+        return response.data; // Return the summoner data
+    } catch (error) {
+        console.error('Failed to fetch summoner info by puuid', error);
+        throw error;
+    }
+}
+
+// Function to fetch summoner rank information using `id`
+async function fetchSummonerInfoByid(id) {
+    const apiKey = process.env.RIOT_API_KEY;
+    const url = `https://kr.api.riotgames.com/lol/league/v4/entries/by-summoner/${id}?api_key=${apiKey}`;
+    try {
+        const response = await axios.get(url);
+        return response.data; // Return the summoner rank data
+    } catch (error) {
+        console.error('Failed to fetch summoner rank info by id', error);
+        throw error;
+    }
+}
+
+async function createSummoner(summonerprofile) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(COLLECTION_NAME);
+    const puuid = await fetchPuuid(summonerprofile.summonerName, summonerprofile.tag);
+    const summonerInfo = await fetchSummonerIdByPuuid(puuid);
+    const summonerRankData = await fetchSummonerInfoByid(summonerInfo.id);
+    const summonerRank = summonerRankData.length > 0 ? summonerRankData[0] : null;
+
+    return await collection.updateOne(
+        { userid: summonerprofile.userid },
+        {
+            $set: {
+                summonerInfo,
+                summonerRank,
+                SummonerName: summonerprofile.summonerName,
+                Tag: summonerprofile.tag
+            }
+        }
+    );
+}
+
 module.exports = {
     connectToMongo,
     fetchUser,
@@ -83,5 +142,8 @@ module.exports = {
     removeUser,
     closeMongoConnection,
     createUserprofile,
-    fetchUserProfile
+    fetchPuuid,
+    fetchSummonerIdByPuuid,
+    fetchSummonerInfoByid,
+    createSummoner
 }

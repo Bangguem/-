@@ -8,7 +8,7 @@ const http = require('http'); // HTTP 서버 모듈 불러오기
 const socketIo = require('socket.io'); // Socket.io 모듈 불러오기
 const server = http.createServer(app); // HTTP 서버 생성
 const io = socketIo(server); // Socket.io 서버를 HTTP 서버에 연결
-const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile, fetchUserProfile } = require('./db');
+const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile, createSummoner } = require('./db');
 const { generateToken, verifyToken } = require('./auth');
 app.use(express.static(path.join(__dirname, 'public'))); // 정적 파일 제공
 app.use(cookieParser()); // 쿠키 파싱
@@ -130,6 +130,8 @@ app.get('/withdraw', authenticateJWT, async (req, res) => {
     }
 });
 
+
+//사용자 정보 수정
 app.post('/userprofile', authenticateJWT, async (req, res) => {
     const userData = req.user;
 
@@ -141,10 +143,8 @@ app.post('/userprofile', authenticateJWT, async (req, res) => {
                 userid: userData.userid,
                 nickname,
                 birthdate,
-                gender
+                gender,
             };
-
-            // MongoDB에 사용자 프로필 저장
             await createUserprofile(userprofile);
             res.redirect('/'); // 저장 후 홈 페이지로 이동
         } catch (error) {
@@ -156,6 +156,28 @@ app.post('/userprofile', authenticateJWT, async (req, res) => {
     }
 });
 
+app.post('/summonerInfo', authenticateJWT, async (req, res) => {
+    const userData = req.user;
+    if (userData) {
+        const { summonerName, tag } = req.body;
+        try {
+            const summonerprofile = {
+                userid: userData.userid,
+                summonerName,
+                tag,
+            };
+            await createSummoner(summonerprofile);
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            res.status(500).send('소환사 정보 가져오기 실패');
+        }
+    } else {
+        res.status(404).send('User Not Found');
+    }
+});
+
+
+//마이페이지
 app.get('/mypage', authenticateJWT, async (req, res) => {
     try {
         const userData = req.user; // JWT에서 사용자 정보 추출
@@ -163,7 +185,7 @@ app.get('/mypage', authenticateJWT, async (req, res) => {
             return res.status(401).send('Unauthorized: No user found');
         }
 
-        const user = await fetchUserProfile(userData.userid); // 새로 분리한 함수 사용
+        const user = await fetchUser(userData.userid); // 새로 분리한 함수 사용
 
         if (!user) {
             return res.status(404).send('User not found');
