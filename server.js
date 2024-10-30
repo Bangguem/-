@@ -76,19 +76,23 @@ app.get('/', authenticateJWT, async (req, res) => {
 
 
 app.post('/signup', async (req, res) => {
-    const { userid, password } = req.body;
-    const user = await fetchUser(userid);
-    if (user) {
-        res.status(400).send(`이미 존재하는 아이디입니다 : ${userid}`);
-        return;
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = { userid, password: hashedPassword };
-    await createUser(newUser);
+    const { userid, password, passwordcheck } = req.body;
+    if (password == passwordcheck) {
+        const user = await fetchUser(userid);
+        if (user) {
+            res.status(400).send(`이미 존재하는 아이디입니다 : ${userid}`);
+            return;
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = { userid, password: hashedPassword };
+        await createUser(newUser);
 
-    const token = generateToken({ userid: newUser.userid });
-    res.cookie('auth_token', token, { httpOnly: true });
-    res.redirect('/userprofile.html');
+        const token = generateToken({ userid: newUser.userid });
+        res.cookie('auth_token', token, { httpOnly: true });
+        res.redirect('/userprofile.html');
+    } else {
+        res.status(400).send('비밀번호가 일치하지 않습니다.');
+    }
 });
 
 app.get('/logout', (req, res) => {
@@ -156,6 +160,7 @@ app.post('/userprofile', authenticateJWT, async (req, res) => {
     }
 });
 
+//라이엇 정보 가져오기
 app.post('/summonerInfo', authenticateJWT, async (req, res) => {
     const userData = req.user;
     if (userData) {
@@ -197,13 +202,3 @@ app.get('/mypage', authenticateJWT, async (req, res) => {
         res.status(500).send('Error fetching user information');
     }
 });
-
-
-let waitingUsers = [];
-let chatRooms = {};
-
-io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.id}`);
-
-
-})
