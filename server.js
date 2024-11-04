@@ -53,6 +53,7 @@ app.get('/', authenticateJWT, async (req, res) => {
                 <a href="/logout">Log Out</a>
                 <a href="/mypage">My Page</a>
                 <a href="/withdraw">Withdraw</a>
+                <a href="/chat">Chat</a>
                 <h1>id:${user.userid}</h1>
                 `);
 
@@ -201,4 +202,47 @@ app.get('/mypage', authenticateJWT, async (req, res) => {
         console.error('Error fetching user:', error);
         res.status(500).send('Error fetching user information');
     }
+});
+
+app.get('/chat', authenticateJWT, async (req, res) => {
+    const userData = req.user;
+});
+
+io.use((socket, next) => {
+    // 클라이언트에서 보낸 쿠키에서 토큰을 추출
+    const token = socket.handshake.headers.cookie?.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1];
+
+    if (!token) {
+        console.log('No token provided. Connection refused.');
+        return next(new Error('Authentication error'));
+    }
+
+    // 토큰 검증
+    const decoded = verifyToken(token);
+    if (!decoded) {
+        console.log('Invalid token. Connection refused.');
+        return next(new Error('Authentication error'));
+    }
+
+    // 인증된 사용자의 정보를 socket 객체에 저장
+    socket.user = decoded;
+    next(); // 인증이 완료되면 연결 허용
+});
+
+// 연결 이벤트 핸들러
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+    console.log('Authenticated user:', socket.user);
+
+    socket.on('chat message', (msg) => {
+        console.log(`${socket.user.nickname}: ${msg}`);
+        io.emit('chat message', {
+            username: socket.user.nickname,
+            message: msg
+        });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
 });
