@@ -18,7 +18,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 // MongoDB에 연결한 후 서버를 시작합니다.
 connectToMongo().then(() => {
-    app.listen(3000, () => {
+    server.listen(3000, () => {
         console.log('server is running at 3000');
     });
 });
@@ -204,8 +204,8 @@ app.get('/mypage', authenticateJWT, async (req, res) => {
     }
 });
 
-app.get('/chat', authenticateJWT, async (req, res) => {
-    const userData = req.user;
+app.get('/chat', (req, res) => {
+    res.sendFile(__dirname + '/public/chat.html');
 });
 
 io.use((socket, next) => {
@@ -230,14 +230,15 @@ io.use((socket, next) => {
 });
 
 // 연결 이벤트 핸들러
-io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
-    console.log('Authenticated user:', socket.user);
+io.on('connection', async (socket) => {
+    const user = await fetchUser(socket.user.userid);
+    console.log('A user connected:', user.userid);
+    console.log('Authenticated user:', user.nickname);
 
     socket.on('chat message', (msg) => {
-        console.log(`${socket.user.nickname}: ${msg}`);
+        console.log(`${user.nickname}: ${msg}`);
         io.emit('chat message', {
-            username: socket.user.nickname,
+            username: user.nickname,
             message: msg
         });
     });

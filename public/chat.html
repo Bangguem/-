@@ -1,11 +1,3 @@
-// Express route for chat page
-app.get('/chat', (req, res) => {
-res.sendFile(__dirname + '/public/chat.html');
-});
-
-// chat.html file
-// Save this file in the 'public' directory
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -13,7 +5,6 @@ res.sendFile(__dirname + '/public/chat.html');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Room</title>
-    <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
@@ -22,7 +13,7 @@ res.sendFile(__dirname + '/public/chat.html');
         <ul id="messages"></ul>
     </div>
     <input id="messageInput" autocomplete="off" placeholder="Type a message..." /><button id="sendButton">Send</button>
-
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         // Connect to the Socket.io server
         const socket = io();
