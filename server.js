@@ -2,14 +2,15 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
-const app = express();
-const USER_COOKIE_KEY = 'USER';
 const http = require('http'); // HTTP 서버 모듈 불러오기
-const socketIo = require('socket.io'); // Socket.io 모듈 불러오기
-const server = http.createServer(app); // HTTP 서버 생성
-const io = socketIo(server); // Socket.io 서버를 HTTP 서버에 연결
 const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile, createSummoner } = require('./db');
 const { generateToken, verifyToken } = require('./auth');
+const setupSocketIo = require('./setupSocketIo');
+
+const app = express();
+const server = http.createServer(app); // HTTP 서버 생성
+const io = setupSocketIo(server); // Socket.io 서버를 HTTP 서버에 연결
+
 app.use(express.static(path.join(__dirname, 'public'))); // 정적 파일 제공
 app.use(cookieParser()); // 쿠키 파싱
 app.use(express.urlencoded({ extended: true })); // URL-encoded 요청 본문 파싱
@@ -206,44 +207,4 @@ app.get('/mypage', authenticateJWT, async (req, res) => {
 
 app.get('/chat', (req, res) => {
     res.sendFile(__dirname + '/public/chat.html');
-});
-
-io.use((socket, next) => {
-    // 클라이언트에서 보낸 쿠키에서 토큰을 추출
-    const token = socket.handshake.headers.cookie?.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1];
-
-    if (!token) {
-        console.log('No token provided. Connection refused.');
-        return next(new Error('Authentication error'));
-    }
-
-    // 토큰 검증
-    const decoded = verifyToken(token);
-    if (!decoded) {
-        console.log('Invalid token. Connection refused.');
-        return next(new Error('Authentication error'));
-    }
-
-    // 인증된 사용자의 정보를 socket 객체에 저장
-    socket.user = decoded;
-    next(); // 인증이 완료되면 연결 허용
-});
-
-// 연결 이벤트 핸들러
-io.on('connection', async (socket) => {
-    const user = await fetchUser(socket.user.userid);
-    console.log('A user connected:', user.userid);
-    console.log('Authenticated user:', user.nickname);
-
-    socket.on('chat message', (msg) => {
-        console.log(`${user.nickname}: ${msg}`);
-        io.emit('chat message', {
-            username: user.nickname,
-            message: msg
-        });
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-    });
 });
