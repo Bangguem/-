@@ -9,7 +9,7 @@ const setupSocketIo = require('./setupSocketIo');
 
 const app = express();
 const server = http.createServer(app); // HTTP 서버 생성
-const io = setupSocketIo(server); // Socket.io 서버를 HTTP 서버에 연결
+const io = setupSocketIo(server);
 
 app.use(express.static(path.join(__dirname, 'public'))); // 정적 파일 제공
 app.use(cookieParser()); // 쿠키 파싱

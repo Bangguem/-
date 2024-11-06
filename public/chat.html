@@ -4,21 +4,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Room</title>
+    <title>Game Matchmaking Chat Room</title>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
-    <h1>Welcome to the Chat Room</h1>
-    <div id="chat">
-        <ul id="messages"></ul>
+    <h1>Welcome to the Game Matchmaking Chat Room</h1>
+
+    <!-- 게임 선택 체크박스와 매칭 버튼 -->
+    <div>
+        <p>Select a game to match:</p>
+        <label><input type="checkbox" name="game" value="롤"> 롤</label><br>
+        <label><input type="checkbox" name="game" value="롤토체스"> 롤토체스</label><br>
+        <label><input type="checkbox" name="game" value="발로란트"> 발로란트</label><br>
+        <label><input type="checkbox" name="game" value="배그"> 배그</label><br>
     </div>
-    <input id="messageInput" autocomplete="off" placeholder="Type a message..." /><button id="sendButton">Send</button>
-    <script src="/socket.io/socket.io.js"></script>
+    <button id="matchButton">Request Match</button>
+
+    <!-- 채팅 화면 -->
+    <div id="chat" style="display:none;">
+        <h2>Chat Room</h2>
+        <ul id="messages"></ul>
+        <input id="messageInput" autocomplete="off" placeholder="Type a message..." />
+        <button id="sendButton">Send</button>
+    </div>
+
     <script>
-        // Connect to the Socket.io server
         const socket = io();
 
-        // Send a message to the server
+        // 매칭 요청 이벤트
+        document.getElementById('matchButton').onclick = () => {
+            // 선택된 게임 가져오기
+            const selectedGame = Array.from(document.querySelectorAll('input[name="game"]:checked'))
+                .map(checkbox => checkbox.value);
+
+            if (selectedGame.length !== 1) {
+                alert("Please select exactly one game to match.");
+                return;
+            }
+
+            // 선택한 게임 이름을 서버로 전송
+            socket.emit('request match', selectedGame[0]);
+        };
+
+        // 매칭 대기 메시지 수신
+        socket.on('waiting', (message) => {
+            alert(message); // 매칭 대기 중일 때 표시
+        });
+
+        // 매칭 성공 메시지 수신
+        socket.on('match success', (data) => {
+            alert(`Matched with ${data.partner.nickname}! You are now in room: ${data.username}`);
+            document.getElementById('chat').style.display = 'block'; // 채팅 화면 표시
+        });
+
+        // 채팅 메시지 전송
         document.getElementById('sendButton').onclick = () => {
             const input = document.getElementById('messageInput');
             if (input.value) {
@@ -27,7 +67,7 @@
             }
         };
 
-        // Listen for chat messages from the server
+        // 서버에서 채팅 메시지 수신하여 표시
         socket.on('chat message', (data) => {
             const item = document.createElement('li');
             item.textContent = `${data.username}: ${data.message}`;
