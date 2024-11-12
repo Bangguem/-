@@ -17,14 +17,37 @@
         <div id="duplicateCheckResult"></div>
         <br>
 
-        <label for="password">Password:</label>
+        <label for="password">비밀번호:</label>
         <input type="password" id="password" name="password" required>
         <br>
 
-        <label for="passwordcheck">Confirm Password:</label>
+        <label for="passwordcheck">비밀번호 확인:</label>
         <input type="password" id="passwordcheck" name="passwordcheck" required>
         <br>
 
+        <label for="email">이메일:</label>
+        <input type="text" id="email" name="email" placeholder="이메일을 입력하세요" required>
+        <br />
+
+        <label for="nickname">닉네임:</label>
+        <input type="text" id="nickname" name="nickname" required>
+        <button type="button" id="checkDuplicateBtn">중복 확인</button>
+        <div id="duplicateCheckResult"></div>
+        <br>
+
+        <!-- 생년월일 입력 -->
+        <label for="birthdate">생년월일:</label>
+        <input type="date" id="birthdate" name="birthdate" required>
+        <br />
+
+        <!-- 성별 선택 -->
+        <label for="gender">성별:</label>
+        <select id="gender" name="gender" required>
+            <option value="male">남성</option>
+            <option value="female">여성</option>
+            <option value="other">기타</option>
+        </select>
+        <br />
         <button type="submit">Sign Up</button>
     </form>
 

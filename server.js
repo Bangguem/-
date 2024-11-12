@@ -76,7 +76,7 @@ app.get('/', authenticateJWT, async (req, res) => {
 
 
 app.post('/signup', async (req, res) => {
-    const { userid, password, passwordcheck } = req.body;
+    const { userid, password, passwordcheck, email, nickname, birthdate, gender } = req.body;
     if (password == passwordcheck) {
         const user = await fetchUser(userid);
         if (user) {
@@ -84,12 +84,12 @@ app.post('/signup', async (req, res) => {
             return;
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = { userid, password: hashedPassword };
+        const newUser = { userid, password: hashedPassword, email, nickname, birthdate, gender };
         await createUser(newUser);
 
         const token = generateToken({ userid: newUser.userid });
         res.cookie('auth_token', token, { httpOnly: true });
-        res.redirect('/userprofile.html');
+        res.redirect('/');
     } else {
         res.status(400).send('비밀번호가 일치하지 않습니다.');
     }
