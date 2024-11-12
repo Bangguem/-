@@ -90,36 +90,42 @@ function setupSocketIo(server) {
         });
         //--------------------일반 게임 매칭--------------------//
         async function processQueue() {
-            // 다른 요청이 처리 중이면 기다리기
             if (isProcessingQueue) return;
-
-            // 잠금 설정
             isProcessingQueue = true;
 
             while (waitingNormalQueue.length >= 2) {
-                // 대기열에서 두 명을 꺼내 매칭
                 const match1 = waitingNormalQueue.shift();
                 const match2 = waitingNormalQueue.shift();
                 const roomName = `normal_room_${match1.socket.id}_${match2.socket.id}`;
 
-                // 방 생성
                 match1.socket.join(roomName);
                 match2.socket.join(roomName);
                 console.log(`${roomName}`);
-                // 각 사용자에게 상대방의 닉네임을 포함한 매칭 성공 메시지 전송
+
+                // 각 사용자에게 상대방 정보 포함하여 매칭 성공 메시지 전송
                 match1.socket.emit('matchSuccess', {
-                    message: `You have been matched with ${match2.user.nickname}`
+                    partner: { nickname: match2.user.nickname, age: match2.user.age },
+                    self: { nickname: match1.user.nickname, age: match1.user.age }
                 });
+
                 match2.socket.emit('matchSuccess', {
-                    message: `You have been matched with ${match1.user.nickname}`
+                    partner: { nickname: match1.user.nickname, age: match1.user.age },
+                    self: { nickname: match2.user.nickname, age: match2.user.age }
                 });
             }
-            // 잠금 해제
             isProcessingQueue = false;
         }
 
         socket.on('request normalmatch', async () => {
             const user = await fetchUser(socket.user.userid);
+            const isUserInQueue = waitingNormalQueue.some(entry => entry.user.userid === user.userid);
+
+            if (isUserInQueue) {
+                // 동일한 사용자가 이미 대기 중일 경우 클라이언트에 알림 전송
+                socket.emit('alreadyInQueue', { message: "You are already in the queue!" });
+                return; // 대기열에 추가하지 않고 종료
+            }
+
             waitingNormalQueue.push({ user, socket });
             processQueue(); // 요청이 올 때마다 대기열 처리 시도
         });

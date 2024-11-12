@@ -45,6 +45,19 @@
             display: none;
             width: 100%;
         }
+
+        /* 사용자 정보 스타일 */
+        #user-info,
+        #partner-info {
+            text-align: center;
+            margin: 10px;
+        }
+
+        #user-info,
+        #partner-info {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -53,6 +66,19 @@
         <button id="matchBtn">Request Match</button>
         <button id="cancelBtn" style="display: none;">Cancel Match</button>
         <button id="leaveBtn" style="display: none;">Leave Chat Room</button>
+
+        <!-- 사용자 정보 표시 영역 -->
+        <div id="user-info" style="display: none;">
+            <h3>Your Info</h3>
+            <p id="myNickname"></p>
+            <p id="myAge"></p>
+        </div>
+
+        <div id="partner-info" style="display: none;">
+            <h3>Partner Info</h3>
+            <p id="partnerNickname"></p>
+            <p id="partnerAge"></p>
+        </div>
 
         <!-- 채팅 섹션 -->
         <div id="chat-section">
@@ -73,6 +99,14 @@
         const messages = document.getElementById('messages');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
+
+        // User Info Elements
+        const userInfo = document.getElementById('user-info');
+        const partnerInfo = document.getElementById('partner-info');
+        const myNickname = document.getElementById('myNickname');
+        const myAge = document.getElementById('myAge');
+        const partnerNickname = document.getElementById('partnerNickname');
+        const partnerAge = document.getElementById('partnerAge');
 
         // Request Match
         matchBtn.addEventListener('click', () => {
@@ -107,13 +141,28 @@
             messages.scrollTop = messages.scrollHeight; // Scroll to the bottom
         });
 
+
+        // 이미 대기 중일 때 알림 받기
+        socket.on('alreadyInQueue', (data) => {
+            alert(data.message); // 알림 표시
+            matchBtn.style.display = 'block'; // 매칭 버튼 다시 표시
+            cancelBtn.style.display = 'none'; // 취소 버튼 숨기기
+        });
+
         // Receive match success from server
         socket.on('matchSuccess', (data) => {
-            // 매칭 성공 시 채팅 UI 표시
+            // 매칭 성공 시 사용자 및 파트너 정보 표시
+            myNickname.textContent = `Nickname: ${data.self.nickname}`;
+            myAge.textContent = `Age: ${data.self.age}`;
+            partnerNickname.textContent = `Nickname: ${data.partner.nickname}`;
+            partnerAge.textContent = `Age: ${data.partner.age}`;
+
+            userInfo.style.display = 'block';
+            partnerInfo.style.display = 'block';
             chatSection.style.display = "block"; // Show chat section
             leaveBtn.style.display = "block"; // Show leave button
             cancelBtn.style.display = "none"; // Hide cancel button
-            messages.innerHTML = `You have been matched with ${data.message}\n`;
+            messages.innerHTML = `You have been matched with ${data.partner.nickname}\n`;
         });
 
         // Leave chat room
@@ -121,6 +170,8 @@
             socket.emit('leave room'); // Notify server to leave room
             matchBtn.style.display = 'block'; // Show match button
             chatSection.style.display = "none"; // Hide chat section
+            userInfo.style.display = "none"; // Hide user info
+            partnerInfo.style.display = "none"; // Hide partner info
             leaveBtn.style.display = "none"; // Hide leave button
             messages.innerHTML = ''; // Clear chat history
             alert("You have left the chat room.");
