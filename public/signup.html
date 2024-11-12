@@ -52,32 +52,39 @@
     </form>
 
     <script>
-        document.getElementById('checkDuplicateBtn').addEventListener('click', async () => {
+        let debounceTimeout;
+        document.getElementById('userid').addEventListener('keyup', () => {
             const userid = document.getElementById('userid').value;
+            const result = document.getElementById('duplicateCheckResult');
+
+            // 입력된 값이 없으면 중복 확인 메시지 숨기기
             if (!userid) {
-                alert('Please enter a User ID to check.');
+                result.textContent = '';
                 return;
             }
 
-            try {
-                const response = await fetch('/check-duplicate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userid })
-                });
+            // 실시간 중복 체크를 위한 디바운스 설정 (500ms 지연)
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch('/check-duplicate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userid })
+                    });
 
-                const result = document.getElementById('duplicateCheckResult');
-                if (response.status === 200) {
-                    result.textContent = '사용할 수 있는 아이디입니다.';
-                    result.style.color = 'green';
-                } else {
-                    const errorMessage = await response.text();
-                    result.textContent = errorMessage;
-                    result.style.color = 'red';
+                    if (response.status === 200) {
+                        result.textContent = '사용할 수 있는 아이디입니다.';
+                        result.style.color = 'green';
+                    } else {
+                        const errorMessage = await response.text();
+                        result.textContent = errorMessage;
+                        result.style.color = 'red';
+                    }
+                } catch (error) {
+                    console.error('Error checking duplicate:', error);
                 }
-            } catch (error) {
-                console.error('Error checking duplicate:', error);
-            }
+            }, 500); // 입력 지연 시간 500ms
         });
     </script>
 </body>

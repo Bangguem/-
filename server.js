@@ -72,9 +72,6 @@ app.get('/', authenticateJWT, async (req, res) => {
 });
 
 
-
-
-
 app.post('/signup', async (req, res) => {
     const { userid, password, passwordcheck, email, nickname, birthdate, gender } = req.body;
     if (password == passwordcheck) {
@@ -170,11 +167,16 @@ app.post('/userprofile', authenticateJWT, async (req, res) => {
     }
 });
 
+function splitSummonerAndTag(input) {
+    const [summonerName, tag = 'kr1'] = input.split('#');
+    return { summonerName, tag };
+}
 //라이엇 정보 가져오기
 app.post('/summonerInfo', authenticateJWT, async (req, res) => {
     const userData = req.user;
     if (userData) {
-        const { summonerName, tag } = req.body;
+        const { summoner } = req.body;
+        const { summonerName, tag } = splitSummonerAndTag(summoner);
         try {
             const summonerprofile = {
                 userid: userData.userid,
