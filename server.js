@@ -163,7 +163,7 @@ app.post('/userprofile', authenticateJWT, async (req, res) => {
 });
 
 //라이엇 정보 가져오기
-app.post('/summonerInfo', authenticateJWT, async (req, res) => {
+app.get('/summonerInfo', authenticateJWT, async (req, res) => {
     const userData = req.user;
     if (userData) {
         const { summonerName, tag } = req.body;
