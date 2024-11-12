@@ -94,6 +94,16 @@ app.post('/signup', async (req, res) => {
         res.status(400).send('비밀번호가 일치하지 않습니다.');
     }
 });
+// 중복 확인 API
+app.post('/check-duplicate', async (req, res) => {
+    const { userid } = req.body;
+    const user = await fetchUser(userid);
+    if (user) {
+        res.status(400).send(`이미 존재하는 아이디입니다 : ${userid}`);
+    } else {
+        res.status(200).send('사용할 수 있는 아이디입니다.');
+    }
+});
 
 app.get('/logout', (req, res) => {
     res.clearCookie('auth_token');
