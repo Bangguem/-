@@ -1,6 +1,10 @@
 require('dotenv').config(); // .env 파일에서 환경 변수를 로드합니다.
 const axios = require('axios');
+const { response } = require('express');
 const { MongoClient } = require("mongodb");
+const DDRAGON_VERSION = '14.22.1'; // 최신 버전으로 업데이트 필요
+const DDRAGON_LANGUAGE = 'en_US'; // 원하는 언어 설정
+
 
 // MongoDB 연결 URL을 환경 변수에서 가져옵니다.
 const url = process.env.MONGODB_URI;
@@ -113,6 +117,60 @@ async function fetchSummonerInfoByid(id) {
         throw error;
     }
 }
+// DDragon에서 챔피언 ID와 이름 매핑 생성
+async function getChampionIdToNameMap() {
+    try {
+        const response = await axios.get(`https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/data/${DDRAGON_LANGUAGE}/champion.json`);
+        const championsData = response.data.data;
+
+        // 챔피언 ID와 이름 매핑 생성
+        const championIdToNameMap = {};
+        for (const championKey in championsData) {
+            const champion = championsData[championKey];
+            championIdToNameMap[champion.key] = {
+                name: champion.name,          // 한국어 이름 (또는 사용 중인 언어)
+                englishName: champion.id      // 영어 이름 (아이콘 URL에 사용)
+            };
+        }
+        return championIdToNameMap;
+    } catch (error) {
+        console.error('Error fetching champion data from DDragon:', error.message);
+        throw error;
+    }
+}
+
+// 숙련도 높은 5개 챔피언 가져오기
+async function getTop5Champions(puuid) {
+    const apiKey = process.env.RIOT_API_KEY;
+    const url = `https://kr.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}?api_key=${apiKey}`;
+    try {
+        // 챔피언 마스터리 정보 가져오기
+        const response = await axios.get(url);
+        const top5Champions = response.data.slice(0, 5);
+
+        // DDragon에서 챔피언 ID와 이름 매핑 생성
+        const championIdToNameMap = await getChampionIdToNameMap();
+
+        // 챔피언 ID를 이름과 아이콘 URL로 변환
+        const top5ChampionsWithIcons = top5Champions.map(champion => {
+            const championData = championIdToNameMap[champion.championId.toString()];
+            const iconUrl = `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/champion/${championData.englishName}.png`;
+
+            return {
+                championName: championData.name,
+                masteryPoints: champion.championPoints,
+                masteryLevel: champion.championLevel,
+                iconUrl: iconUrl
+            };
+        });
+
+        return top5ChampionsWithIcons;
+    } catch (error) {
+        console.error('Error fetching top champions:', error.message);
+        throw error;
+    }
+}
+
 
 async function createSummoner(summonerprofile) {
     const db = client.db(DB_NAME);
@@ -120,6 +178,7 @@ async function createSummoner(summonerprofile) {
     const puuid = await fetchPuuid(summonerprofile.summonerName, summonerprofile.tag);
     const summonerInfo = await fetchSummonerIdByPuuid(puuid);
     const summonerRankData = await fetchSummonerInfoByid(summonerInfo.id);
+    const top5Champions = await getTop5Champions(puuid);
     const summonerRank = summonerRankData.length > 0 ? summonerRankData[0] : null;
 
     return await collection.updateOne(
@@ -128,6 +187,7 @@ async function createSummoner(summonerprofile) {
             $set: {
                 summonerInfo,
                 summonerRank,
+                top5Champions,
                 SummonerName: summonerprofile.summonerName,
                 Tag: summonerprofile.tag
             }
@@ -142,8 +202,5 @@ module.exports = {
     removeUser,
     closeMongoConnection,
     createUserprofile,
-    fetchPuuid,
-    fetchSummonerIdByPuuid,
-    fetchSummonerInfoByid,
-    createSummoner
+    createSummoner,
 }

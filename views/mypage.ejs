@@ -22,6 +22,9 @@
         <li><strong>성별:</strong>
             <%= user.gender || '없음' %>
         </li>
+        <div>
+            <img src="<%= user.top5Champions[0].iconUrl  %>">
+        </div>
     </ul>
     <a href="/">홈으로</a>
     <a href="/userprofile.html">내 정보 수정</a>
