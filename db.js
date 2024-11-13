@@ -155,12 +155,13 @@ async function getTop5Champions(puuid) {
         const top5ChampionsWithIcons = top5Champions.map(champion => {
             const championData = championIdToNameMap[champion.championId.toString()];
             const iconUrl = `https://ddragon.leagueoflegends.com/cdn/${DDRAGON_VERSION}/img/champion/${championData.englishName}.png`;
-
+            const loadingUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${championData.englishName}_0.jpg`
             return {
                 championName: championData.name,
                 masteryPoints: champion.championPoints,
                 masteryLevel: champion.championLevel,
-                iconUrl: iconUrl
+                iconUrl: iconUrl,
+                loadingUrl: loadingUrl
             };
         });
 
