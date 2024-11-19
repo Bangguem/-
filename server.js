@@ -341,3 +341,20 @@ app.put('/boards/:id', authenticateJWT, async (req, res) => {
         res.status(500).send('Failed to update post.');
     }
 });
+
+//상세 페이지 라우트 추가
+app.get('/boards/:id', authenticateJWT, async (req, res) => {
+    const postId = req.params.id;
+
+    try {
+        const post = await fetchBoardPostById(postId); // 게시글 데이터 가져오기
+        if (!post) {
+            return res.status(404).send('Post not found.');
+        }
+
+        res.render('post-detail', { post }); // 상세 페이지 렌더링
+    } catch (error) {
+        console.error('Error fetching post details:', error);
+        res.status(500).send('Failed to fetch post details.');
+    }
+});

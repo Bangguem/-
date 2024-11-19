@@ -4,31 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>게시판</title>
+    <style>
+        table {
+            width: 80%;
+            margin: auto;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            font-size: 1.2em;
+        }
+
+        td {
+            font-size: 1.1em;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 10px 20px;
+            font-size: 1em;
+        }
+
+        /* 버튼을 오른쪽으로 이동 */
+        .button-container {
+            width: 80%;
+            margin: 20px auto; /* 표와 같은 너비로 중앙 정렬 */
+            text-align: right; /* 오른쪽 정렬 */
+        }
+    </style>
 </head>
 <body>
     <h1>게시판</h1>
+    <!-- 게시글 목록 -->
+    <table>
+        <thead>
+            <tr>
+                <th>제목</th>
+                <th>작성자</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% posts.forEach(post => { %>
+                <tr>
+                    <td><a href="/boards/<%= post._id %>"><%= post.title %></a></td>
+                    <td><%= post.author %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
 
     <!-- 게시글 추가 버튼 -->
-    <a href="/boards/new"><button>게시글 추가</button></a>
-
-    <!-- 게시글 목록 -->
-    <ul>
-        <% posts.forEach(post => { %>
-            <li>
-                <h2><%= post.title %></h2>
-                <p><%= post.content %></p>
-                <p>작성자: <%= post.author %></p>
-                <p>작성일: <%= new Date(post.createdAt).toLocaleString() %></p>
-                <!-- 수정 버튼 -->
-                <a href="/boards/<%= post._id %>/edit"><button>수정</button></a>
-                 <!-- 삭제 버튼 -->
-                 <form action="/boards/<%= post._id %>?_method=DELETE" method="POST" style="display:inline;">
-                    <button type="submit">삭제</button>
-                </form>
-            </li>
-        <% }) %>
-    </ul>
-
-    <a href="/">홈으로 이동</a>
+    <div class="button-container">
+        <a href="/boards/new"><button>게시글 추가</button></a>
+    </div>
 </body>
 </html>
