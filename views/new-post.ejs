@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>새 글 작성</title>
+</head>
+<body>
+    <h1>새 글 작성</h1>
+    <form action="/boards" method="POST">
+        <label for="title">제목:</label>
+        <input type="text" id="title" name="title" placeholder="제목을 입력하세요" required>
+        <br>
+        <label for="content">내용:</label>
+        <textarea id="content" name="content" placeholder="내용을 입력하세요" required></textarea>
+        <br>
+        <button type="submit">작성하기</button>
+    </form>
+    <a href="/boards">뒤로가기</a>
+</body>
+</html>

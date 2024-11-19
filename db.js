@@ -4,7 +4,7 @@ const { response } = require('express');
 const { MongoClient } = require("mongodb");
 const DDRAGON_VERSION = '14.22.1'; // 최신 버전으로 업데이트 필요
 const DDRAGON_LANGUAGE = 'en_US'; // 원하는 언어 설정
-
+const { ObjectId } = require('mongodb'); // ObjectId 가져오기
 
 // MongoDB 연결 URL을 환경 변수에서 가져옵니다.
 const url = process.env.MONGODB_URI;
@@ -15,6 +15,7 @@ const client = new MongoClient(url);
 // 데이터베이스와 컬렉션 이름을 정의합니다.
 const DB_NAME = 'userDB';
 const COLLECTION_NAME = 'users';
+const BOARDS_COLLECTION = 'boards'; // 게시판 데이터를 저장할 컬렉션
 
 // MongoDB에 연결하는 비동기 함수입니다.
 async function connectToMongo() {
@@ -196,6 +197,52 @@ async function createSummoner(summonerprofile) {
     );
 }
 
+
+// 게시글 생성
+async function createBoardPost(post) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(BOARDS_COLLECTION);
+    return await collection.insertOne({
+        ...post,
+        authorId: post.authorId, // 작성자 ID 포함
+    });
+}
+
+// 게시글 목록 조회
+async function fetchBoardPosts() {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(BOARDS_COLLECTION);
+    return await collection.find({}).sort({ createdAt: -1 }).toArray(); // 최신순 정렬
+}
+
+//게시글 삭제
+async function deleteBoardPost(postId) {
+    const db = client.db(DB_NAME); // 데이터베이스 선택
+    const collection = db.collection(BOARDS_COLLECTION); // 컬렉션 선택
+
+    // MongoDB ObjectId로 변환 후 삭제
+    return await collection.deleteOne({ _id: new ObjectId(postId) });
+}
+
+//게시글 수정 추가
+async function updateBoardPost(postId, updatedData) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(BOARDS_COLLECTION);
+
+    return await collection.updateOne(
+        { _id: new ObjectId(postId) },
+        { $set: updatedData }
+    );
+}
+
+//특정 게시글 조회 추가
+async function fetchBoardPostById(postId) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(BOARDS_COLLECTION);
+
+    return await collection.findOne({ _id: new ObjectId(postId) });
+}
+
 module.exports = {
     connectToMongo,
     fetchUser,
@@ -204,4 +251,9 @@ module.exports = {
     closeMongoConnection,
     createUserprofile,
     createSummoner,
+    createBoardPost, // 추가된 기능
+    fetchBoardPosts, // 추가된 기능
+    deleteBoardPost, //추가된 기능
+    updateBoardPost, //추가된 기능
+    fetchBoardPostById, //추가된 기능
 }
