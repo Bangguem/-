@@ -13,7 +13,7 @@
 
         th, td {
             padding: 15px;
-            text-align: left;
+            text-align: center;
             border: 1px solid #ddd;
         }
 
@@ -37,6 +37,11 @@
 
         a {
             text-decoration: none;
+            color: #007bff;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
 
         button {
@@ -45,22 +50,39 @@
             font-size: 1em;
         }
 
-        /* 버튼을 오른쪽으로 이동 */
         .button-container {
             width: 80%;
-            margin: 20px auto; /* 표와 같은 너비로 중앙 정렬 */
-            text-align: right; /* 오른쪽 정렬 */
+            margin: 20px auto;
+            text-align: right;
+        }
+
+        .likes, .dislikes {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .likes .icon, .dislikes .icon {
+            font-size: 1.2em;
+        }
+
+        .likes span, .dislikes span {
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <h1>게시판</h1>
+
     <!-- 게시글 목록 -->
     <table>
         <thead>
             <tr>
                 <th>제목</th>
                 <th>작성자</th>
+                <th>좋아요</th>
+                <th>싫어요</th>
             </tr>
         </thead>
         <tbody>
@@ -68,6 +90,18 @@
                 <tr>
                     <td><a href="/boards/<%= post._id %>"><%= post.title %></a></td>
                     <td><%= post.author %></td>
+                    <td>
+                        <div class="likes">
+                            <span class="icon">👍</span>
+                            <span><%= post.likes || 0 %></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="dislikes">
+                            <span class="icon">👎</span>
+                            <span><%= post.dislikes || 0 %></span>
+                        </div>
+                    </td>
                 </tr>
             <% }); %>
         </tbody>

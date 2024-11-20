@@ -10,7 +10,7 @@ const server = http.createServer(app); // HTTP 서버 생성
 const io = socketIo(server); // Socket.io 서버를 HTTP 서버에 연결
 const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile, createSummoner } = require('./db');
 //사용자가 작성한 게시글을 데이터베이스에 저장
-const { createBoardPost, fetchBoardPosts, deleteBoardPost, updateBoardPost, fetchBoardPostById } = require('./db');
+const { createBoardPost, fetchBoardPosts, deleteBoardPost, updateBoardPost, fetchBoardPostById, incrementLikes, incrementDislikes} = require('./db');
 const { generateToken, verifyToken } = require('./auth');
 const methodOverride = require('method-override');//게시판 delete를 위한 미들웨어
 app.use(methodOverride('_method')); // _method 쿼리 파라미터로 HTTP 메서드 재정의
@@ -356,5 +356,29 @@ app.get('/boards/:id', authenticateJWT, async (req, res) => {
     } catch (error) {
         console.error('Error fetching post details:', error);
         res.status(500).send('Failed to fetch post details.');
+    }
+});
+
+// 좋아요 업데이트
+app.post('/boards/:id/like', async (req, res) => {
+    try {
+        await incrementLikes(req.params.id); // incrementLikes 함수 호출
+        const updatedPost = await fetchBoardPostById(req.params.id);
+        res.json({ likes: updatedPost.likes, dislikes: updatedPost.dislikes });
+    } catch (error) {
+        console.error('Failed to update likes:', error);
+        res.status(500).json({ error: 'Failed to update likes' });
+    }
+});
+
+// 싫어요 업데이트
+app.post('/boards/:id/dislike', async (req, res) => {
+    try {
+        await incrementDislikes(req.params.id); // incrementDislikes 함수 호출
+        const updatedPost = await fetchBoardPostById(req.params.id);
+        res.json({ likes: updatedPost.likes, dislikes: updatedPost.dislikes });
+    } catch (error) {
+        console.error('Failed to update dislikes:', error);
+        res.status(500).json({ error: 'Failed to update dislikes' });
     }
 });

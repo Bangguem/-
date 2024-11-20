@@ -243,6 +243,26 @@ async function fetchBoardPostById(postId) {
     return await collection.findOne({ _id: new ObjectId(postId) });
 }
 
+//좋아요 기능
+async function incrementLikes(postId) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(BOARDS_COLLECTION);
+    return await collection.updateOne(
+        { _id: new ObjectId(postId) },
+        { $inc: { likes: 1 } }
+    );
+}
+
+//싫어요 기능
+async function incrementDislikes(postId) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(BOARDS_COLLECTION);
+    return await collection.updateOne(
+        { _id: new ObjectId(postId) },
+        { $inc: { dislikes: 1 } }
+    );
+}
+
 module.exports = {
     connectToMongo,
     fetchUser,
@@ -256,4 +276,6 @@ module.exports = {
     deleteBoardPost, //추가된 기능
     updateBoardPost, //추가된 기능
     fetchBoardPostById, //추가된 기능
+    incrementLikes, //추가된 기능
+    incrementDislikes, //추가된 기능
 }

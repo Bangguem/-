@@ -15,70 +15,129 @@
             background-color: #f9f9f9;
             padding: 20px;
         }
+
         .container {
             width: 100%;
-            max-width: 900px; /* 전체 영역 더 넓게 */
+            max-width: 900px;
             background-color: #fff;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
         h1 {
             text-align: center;
-            font-size: 1.8em; /* 제목 크기 줄이기 */
+            font-size: 1.8em;
             margin-bottom: 10px;
         }
+
         .meta-info {
             display: flex;
-            justify-content: space-between; /* 작성자와 시간 간격 조정 */
-            font-size: 0.9em; /* 메타 정보 크기 축소 */
+            justify-content: space-between;
+            font-size: 0.9em;
             color: #555;
             margin-bottom: 15px;
         }
+
         .content {
-            font-size: 1.2em; /* 본문 텍스트 키우기 */
+            font-size: 1.2em;
             line-height: 1.8;
             color: #333;
-            margin-bottom: 30px; /* 본문 아래 여백 추가 */
+            margin-bottom: 30px;
         }
+
         hr {
             margin: 15px 0;
             border: 0;
             border-top: 1px solid #ddd;
         }
-        .button-container {
+
+        .likes-dislikes {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             align-items: center;
             margin-top: 20px;
         }
-        button {
+
+        .likes-dislikes div {
+            text-align: center;
+        }
+
+        .likes-dislikes button {
             padding: 10px 20px;
             font-size: 1em;
             color: #fff;
-            background-color: #007bff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-        button:hover {
-            background-color: #0056b3;
+
+        .like-btn {
+            background-color: #28a745;
         }
-        form {
-            display: inline;
+
+        .like-btn:hover {
+            background-color: #218838;
         }
-        a {
+
+        .dislike-btn {
+            background-color: #dc3545;
+        }
+
+        .dislike-btn:hover {
+            background-color: #c82333;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .button-container a,
+        .button-container form button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #fff;
+            text-align: center;
             text-decoration: none;
         }
-        .back-link {
-            text-align: center;
-            margin-top: 15px;
-            display: block;
-            font-size: 1.1em;
-            color: #007bff;
+
+        .edit-button {
+            background-color: #007bff;
         }
-        .back-link:hover {
-            text-decoration: underline;
+
+        .edit-button:hover {
+            background-color: #0056b3;
+        }
+
+        .delete-button {
+            background-color: #dc3545;
+        }
+
+        .delete-button:hover {
+            background-color: #b21f2d;
+        }
+
+        .back-button {
+            display: block;
+            width: auto;
+            margin-top: 20px;
+            text-align: center;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            background-color: #6c757d;
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background-color: #5a6268;
         }
     </style>
 </head>
@@ -94,18 +153,55 @@
             <%- post.content.replace(/\n/g, '<br>') %>
         </div>
 
+        <!-- 좋아요/싫어요 영역 -->
+        <div class="likes-dislikes">
+            <div>
+                <button class="like-btn" id="like-btn">👍 좋아요</button>
+                <p>좋아요: <span id="like-count"><%= post.likes || 0 %></span></p>
+            </div>
+            <div>
+                <button class="dislike-btn" id="dislike-btn">👎 싫어요</button>
+                <p>싫어요: <span id="dislike-count"><%= post.dislikes || 0 %></span></p>
+            </div>
+        </div>
+
+        <!-- 수정 및 삭제 버튼 -->
         <div class="button-container">
-            <!-- 수정 버튼 -->
-            <a href="/boards/<%= post._id %>/edit">
-                <button>수정</button>
-            </a>
-            <!-- 삭제 버튼 -->
+            <a href="/boards/<%= post._id %>/edit" class="edit-button">수정</a>
             <form action="/boards/<%= post._id %>?_method=DELETE" method="POST">
-                <button type="submit">삭제</button>
+                <button type="submit" class="delete-button">삭제</button>
             </form>
         </div>
 
-        <a href="/boards" class="back-link">목록으로 돌아가기</a>
+        <!-- 목록으로 돌아가기 버튼 -->
+        <a href="/boards" class="back-button">뒤로가기</a>
     </div>
+
+    <script>
+        const likeBtn = document.getElementById('like-btn');
+        const dislikeBtn = document.getElementById('dislike-btn');
+
+        likeBtn.addEventListener('click', async () => {
+            const res = await fetch(`/boards/<%= post._id %>/like`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('like-count').innerText = data.likes;
+            } else {
+                console.error('좋아요 업데이트 실패');
+                alert('좋아요를 업데이트할 수 없습니다.');
+            }
+        });
+
+        dislikeBtn.addEventListener('click', async () => {
+            const res = await fetch(`/boards/<%= post._id %>/dislike`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('dislike-count').innerText = data.dislikes;
+            } else {
+                console.error('싫어요 업데이트 실패');
+                alert('싫어요를 업데이트할 수 없습니다.');
+            }
+        });
+    </script>
 </body>
 </html>
