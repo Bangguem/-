@@ -10,7 +10,7 @@ const server = http.createServer(app); // HTTP 서버 생성
 const io = socketIo(server); // Socket.io 서버를 HTTP 서버에 연결
 const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile, createSummoner } = require('./db');
 //사용자가 작성한 게시글을 데이터베이스에 저장
-const { createBoardPost, fetchBoardPosts, deleteBoardPost, updateBoardPost, fetchBoardPostById, incrementLikes, incrementDislikes} = require('./db');
+const { createBoardPost, fetchBoardPosts, deleteBoardPost, updateBoardPost, fetchBoardPostById, incrementLikes, incrementDislikes, addCommentToPost} = require('./db');
 const { generateToken, verifyToken } = require('./auth');
 const methodOverride = require('method-override');//게시판 delete를 위한 미들웨어
 app.use(methodOverride('_method')); // _method 쿼리 파라미터로 HTTP 메서드 재정의
@@ -380,5 +380,31 @@ app.post('/boards/:id/dislike', async (req, res) => {
     } catch (error) {
         console.error('Failed to update dislikes:', error);
         res.status(500).json({ error: 'Failed to update dislikes' });
+    }
+});
+
+// 댓글 작성 라우트
+app.post('/boards/:id/comments', authenticateJWT, async (req, res) => {
+    const postId = req.params.id;
+    const { content } = req.body;
+    const user = req.user;
+
+    if (!user) {
+        return res.status(401).send('Unauthorized: Please log in to add a comment.');
+    }
+
+    try {
+        const newComment = {
+            content,
+            author: user.userid,
+            createdAt: new Date(),
+        };
+
+        // 게시글에 댓글 추가
+        await addCommentToPost(postId, newComment);
+        res.redirect(`/boards/${postId}`); // 댓글 추가 후 상세 페이지로 리디렉션
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        res.status(500).send('Failed to add comment.');
     }
 });

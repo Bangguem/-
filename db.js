@@ -263,6 +263,17 @@ async function incrementDislikes(postId) {
     );
 }
 
+// 게시글에 댓글 추가
+async function addCommentToPost(postId, comment) {
+    const db = client.db(DB_NAME);
+    const collection = db.collection(BOARDS_COLLECTION);
+
+    return await collection.updateOne(
+        { _id: new ObjectId(postId) },
+        { $push: { comments: comment } }
+    );
+}
+
 module.exports = {
     connectToMongo,
     fetchUser,
@@ -278,4 +289,5 @@ module.exports = {
     fetchBoardPostById, //추가된 기능
     incrementLikes, //추가된 기능
     incrementDislikes, //추가된 기능
+    addCommentToPost,
 }

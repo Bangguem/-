@@ -139,6 +139,50 @@
         .back-button:hover {
             background-color: #5a6268;
         }
+
+        /* 댓글 섹션 스타일 */
+        #comments-section {
+            margin-top: 40px;
+        }
+
+        #comment-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #comment-list li {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #comment-list strong {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        textarea {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        button[type="submit"] {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -163,6 +207,30 @@
                 <button class="dislike-btn" id="dislike-btn">👎 싫어요</button>
                 <p>싫어요: <span id="dislike-count"><%= post.dislikes || 0 %></span></p>
             </div>
+        </div>
+
+        <!-- 댓글 섹션 -->
+        <hr>
+        <div id="comments-section">
+            <h2>댓글</h2>
+            <ul id="comment-list">
+                <% if (post.comments && post.comments.length > 0) { %>
+                    <% post.comments.forEach(comment => { %>
+                        <li>
+                            <strong><%= comment.author %></strong>
+                            <p><%- comment.content.replace(/\n/g, '<br>') %></p>
+                            <small style="color: #888;">작성 시간: <%= new Date(comment.createdAt).toLocaleString() %></small>
+                        </li>
+                    <% }) %>
+                <% } else { %>
+                    <p>댓글이 없습니다. 첫 댓글을 작성해 보세요!</p>
+                <% } %>
+            </ul>
+
+            <form id="comment-form" action="/boards/<%= post._id %>/comments" method="POST">
+                <textarea name="content" rows="3" placeholder="댓글을 입력하세요" required></textarea>
+                <button type="submit">댓글 작성</button>
+            </form>
         </div>
 
         <!-- 수정 및 삭제 버튼 -->
