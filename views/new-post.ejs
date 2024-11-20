@@ -4,18 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>새 글 작성</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 200px; /* 내용 칸 높이 */
+            resize: vertical; /* 필요하면 크기 조정 가능 */
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #007bff;
+            font-size: 1em;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h1>새 글 작성</h1>
-    <form action="/boards" method="POST">
-        <label for="title">제목:</label>
-        <input type="text" id="title" name="title" placeholder="제목을 입력하세요" required>
-        <br>
-        <label for="content">내용:</label>
-        <textarea id="content" name="content" placeholder="내용을 입력하세요" required></textarea>
-        <br>
-        <button type="submit">작성하기</button>
-    </form>
-    <a href="/boards">뒤로가기</a>
+    <div class="container">
+        <h1>새 글 작성</h1>
+        <form action="/boards" method="POST">
+            <label for="title">제목:</label>
+            <input type="text" id="title" name="title" placeholder="제목을 입력하세요" required>
+            <label for="content">내용:</label>
+            <textarea id="content" name="content" placeholder="내용을 입력하세요" required></textarea>
+            <button type="submit">작성하기</button>
+        </form>
+        <a href="/boards">뒤로가기</a>
+    </div>
 </body>
 </html>

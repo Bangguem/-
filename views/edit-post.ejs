@@ -4,16 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>게시글 수정</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 200px;
+            resize: vertical;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            text-decoration: none;
+            color: #007bff;
+            font-size: 1em;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h1>게시글 수정</h1>
-
-    <form action="/boards/<%= post._id %>?_method=PUT" method="POST">
-        <input type="text" name="title" value="<%= post.title %>" required>
-        <textarea name="content" required><%= post.content %></textarea>
-        <button type="submit">수정 완료</button>
-    </form>
-
-    <a href="/boards">취소</a>
+    <div class="container">
+        <h1>게시글 수정</h1>
+        <form action="/boards/<%= post._id %>?_method=PUT" method="POST">
+            <label for="title">제목</label>
+            <input type="text" id="title" name="title" value="<%= post.title %>" required>
+            
+            <label for="content">내용</label>
+            <textarea id="content" name="content" required><%= post.content %></textarea>
+            
+            <button type="submit">수정 완료</button>
+        </form>
+        <a href="/boards" class="back-link">취소</a>
+    </div>
 </body>
 </html>
