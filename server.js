@@ -9,9 +9,7 @@ const socketIo = require('socket.io'); // Socket.io 모듈 불러오기
 const server = http.createServer(app); // HTTP 서버 생성
 const io = socketIo(server); // Socket.io 서버를 HTTP 서버에 연결
 const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection,
-    createUserprofile, createSummoner, fetchUserByemail, updatePassword,
-    saveVerificationCode, fetchVerificationCode, deleteVerificationCode,
-    verifyVerificationCode } = require('./db');
+    createUserprofile, createSummoner, fetchUserByemail, updatePassword, } = require('./db');
 const { generateToken, verifyToken } = require('./auth');
 const nodemailer = require('nodemailer');
 app.use(express.static(path.join(__dirname, 'public'))); // 정적 파일 제공
@@ -231,97 +229,57 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const crypto = require('crypto');
-// 아이디 찾기 - 이메일 인증 코드 발송
-app.post('/send-id-verification', async (req, res) => {
+
+app.post('/request-password-reset', async (req, res) => {
     const { email } = req.body;
-    const user = await fetchUserByemail(email);
 
-    if (!user) {
-        return res.status(400).send('가입되지 않은 이메일입니다.');
-    }
-
-    const verificationCode = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = Date.now() + 300000; // 5분 유효
-
-    // 인증 코드 저장
-    await saveVerificationCode(email, verificationCode, expiresAt);
-
-    // 이메일 발송
-    await transporter.sendMail({
-        from: process.env.NODEMAILER_USER,
-        to: email,
-        subject: '아이디 찾기 인증 코드',
-        text: `인증 코드는 ${verificationCode}입니다.`,
-    });
-
-    res.send('인증 코드가 발송되었습니다.');
-});
-
-// 인증 코드 검증 및 아이디 반환
-app.post('/verify-id-code', async (req, res) => {
-    const { email, code } = req.body;
-
-    // 인증 코드 검증
-    const verificationResult = await verifyVerificationCode(email, code);
-    if (!verificationResult.valid) {
-        return res.status(400).send(verificationResult.reason);
-    }
-
-    // 인증 코드 삭제
-    await deleteVerificationCode(email);
-
-    // 사용자 정보 반환
-    const user = await fetchUserByemail(email);
-    if (!user) {
-        return res.status(400).send('사용자를 찾을 수 없습니다.');
-    }
-
-    res.send(`아이디는 ${user.userid} 입니다.`);
-});
-
-// 비밀번호 찾기 - 이메일 인증 코드 발송
-app.post('/send-password-verification', async (req, res) => {
-    const { email } = req.body;
-    const user = await fetchUserByemail(email);
-
-    if (!user) {
-        return res.status(400).send('가입되지 않은 이메일입니다.');
-    }
-
-    const verificationCode = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = Date.now() + 300000; // 5분 유효
-
-    // 인증 코드 저장
-    await saveVerificationCode(email, verificationCode, expiresAt);
-
-    // 이메일 발송
-    await transporter.sendMail({
-        from: process.env.NODEMAILER_USER,
-        to: email,
-        subject: '비밀번호 찾기 인증 코드',
-        text: `인증 코드는 ${verificationCode}입니다.`,
-    });
-
-    res.send('인증 코드가 발송되었습니다.');
-});
-
-// 인증 코드 검증 및 비밀번호 변경
-app.post('/reset-password', async (req, res) => {
-    const { email, code, newPassword } = req.body;
-    await fetchVerificationCode(email);
-
-    const verificationResult = await verifyVerificationCode(email, code);
-    if (!verificationResult) {
-        return res.status(400).send(verificationResult.reason);
-    }
-    // 인증 코드 삭제
-    await deleteVerificationCode(email);
-
-    // 비밀번호 해싱 및 업데이트
     try {
+        // 이메일로 사용자 확인
+        const user = await fetchUserByemail(email);
+        if (!user) {
+            return res.status(404).send('가입되지 않은 이메일입니다.');
+        }
+
+        // JWT 토큰 생성 (유효 시간: 15분)
+        const token = generateToken({ email }, '5m');
+
+        // 비밀번호 변경 링크 생성
+        const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+
+        // 이메일 전송
+        await transporter.sendMail({
+            from: process.env.NODEMAILER_USER,
+            to: email,
+            subject: '비밀번호 변경 요청',
+            text: `비밀번호를 변경하려면 다음 링크를 클릭하세요: ${resetLink}`,
+        });
+
+        res.send('비밀번호 변경 링크가 이메일로 전송되었습니다.');
+    } catch (error) {
+        console.error('Error requesting password reset:', error);
+        res.status(500).send('비밀번호 변경 요청 중 오류가 발생했습니다.');
+    }
+});
+
+// 비밀번호 변경 페이지
+app.get('/reset-password', (req, res) => {
+    const filePath = path.join(__dirname, 'public', 'reset-password.html');
+    res.sendFile(filePath);
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    try {
+        // 토큰 검증
+        const decoded = verifyToken(token);
+        if (!decoded) {
+            return res.status(400).send('유효하지 않거나 만료된 링크입니다.');
+        }
+
+        // 비밀번호 해싱 및 업데이트
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        const result = await updatePassword(email, hashedPassword);
+        const result = await updatePassword(decoded.email, hashedPassword);
 
         if (result.matchedCount > 0) {
             return res.send('비밀번호가 성공적으로 변경되었습니다.');
@@ -329,7 +287,7 @@ app.post('/reset-password', async (req, res) => {
             return res.status(400).send('사용자를 찾을 수 없습니다.');
         }
     } catch (error) {
-        console.error('Error updating password:', error);
-        return res.status(500).send('비밀번호를 변경하는 도중 문제가 발생했습니다.');
+        console.error('Error resetting password:', error);
+        return res.status(500).send('비밀번호 변경 중 오류가 발생했습니다.');
     }
 });
