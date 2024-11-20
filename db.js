@@ -31,13 +31,7 @@ async function connectToMongo() {
 async function fetchUser(userid) {
     const db = client.db(DB_NAME);
     const collection = db.collection(COLLECTION_NAME);
-    return await collection.findOne({ userid: userid });
-}
-
-async function fetchUserByemail(email) {
-    const db = client.db(DB_NAME);
-    const collection = db.collection(COLLECTION_NAME);
-    return await collection.findOne({ email: email });
+    return await collection.findOne({ userid });
 }
 
 async function createUser(newUser) {
@@ -69,15 +63,6 @@ async function createUserprofile(userprofile) {
     );
 }
 
-async function updatePassword(email, hashedPassword) {
-    const db = client.db(DB_NAME);
-    const collection = db.collection(COLLECTION_NAME);
-    const result = await collection.updateOne(
-        { email: email },
-        { $set: { password: hashedPassword } }
-    );
-    return result;
-}
 
 async function closeMongoConnection() {
     await client.close();
@@ -211,48 +196,6 @@ async function createSummoner(summonerprofile) {
     );
 }
 
-async function saveVerificationCode(email, code, expiresAt) {
-    const db = client.db(DB_NAME);
-    const collection = db.collection('verificationCodes');
-    await collection.updateOne(
-        { email: email },
-        { $set: { code: code, expiresAt: expiresAt } },
-        { upsert: true } // 문서가 없으면 새로 생성
-    );
-}
-
-async function fetchVerificationCode(email) {
-    const db = client.db(DB_NAME);
-    const collection = db.collection('verificationCodes');
-    return await collection.findOne({ email: email });
-}
-
-async function deleteVerificationCode(email) {
-    const db = client.db(DB_NAME);
-    const collection = db.collection('verificationCodes');
-    await collection.deleteOne({ email: email });
-}
-
-async function verifyVerificationCode(email, code) {
-    const db = client.db(DB_NAME);
-    const collection = db.collection('verificationCodes');
-    const record = await collection.findOne({ email: email });
-
-    if (!record) {
-        return { valid: false, reason: '인증 코드가 존재하지 않습니다.' };
-    }
-
-    if (record.code !== code) {
-        return { valid: false, reason: '인증 코드가 일치하지 않습니다.' };
-    }
-
-    if (Date.now() > record.expiresAt) {
-        return { valid: false, reason: '인증 코드가 만료되었습니다.' };
-    }
-
-    return { valid: true };
-}
-
 module.exports = {
     connectToMongo,
     fetchUser,
@@ -261,10 +204,4 @@ module.exports = {
     closeMongoConnection,
     createUserprofile,
     createSummoner,
-    fetchUserByemail,
-    updatePassword,
-    saveVerificationCode,
-    fetchVerificationCode,
-    deleteVerificationCode,
-    verifyVerificationCode
 }
