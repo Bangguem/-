@@ -2,15 +2,16 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
-const http = require('http'); // HTTP 서버 모듈 불러오기
-const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection, createUserprofile, createSummoner } = require('./db');
-const { generateToken, verifyToken } = require('./auth');
-const setupSocketIo = require('./setupSocketIo');
-
 const app = express();
+require('dotenv').config();
+const http = require('http'); // HTTP 서버 모듈 불러오기
+const socketIo = require('socket.io'); // Socket.io 모듈 불러오기
 const server = http.createServer(app); // HTTP 서버 생성
-const io = setupSocketIo(server);
-
+const io = socketIo(server); // Socket.io 서버를 HTTP 서버에 연결
+const { connectToMongo, fetchUser, createUser, removeUser, closeMongoConnection,
+    createUserprofile, createSummoner, fetchUserByemail, updatePassword, } = require('./db');
+const { generateToken, verifyToken } = require('./auth');
+const nodemailer = require('nodemailer');
 app.use(express.static(path.join(__dirname, 'public'))); // 정적 파일 제공
 app.use(cookieParser()); // 쿠키 파싱
 app.use(express.urlencoded({ extended: true })); // URL-encoded 요청 본문 파싱
@@ -19,7 +20,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 // MongoDB에 연결한 후 서버를 시작합니다.
 connectToMongo().then(() => {
-    server.listen(3000, () => {
+    app.listen(3000, () => {
         console.log('server is running at 3000');
     });
 });
@@ -53,8 +54,8 @@ app.get('/', authenticateJWT, async (req, res) => {
             res.status(200).send(`
                 <a href="/logout">Log Out</a>
                 <a href="/mypage">My Page</a>
+                <a href="/userprofile.html">프로필 수정</a>
                 <a href="/withdraw">Withdraw</a>
-                <a href="/chat">Chat</a>
                 <h1>id:${user.userid}</h1>
                 `);
 
@@ -73,27 +74,37 @@ app.get('/', authenticateJWT, async (req, res) => {
 
 });
 
-
-
-
-
 app.post('/signup', async (req, res) => {
-    const { userid, password, passwordcheck } = req.body;
-    if (password == passwordcheck) {
-        const user = await fetchUser(userid);
-        if (user) {
-            res.status(400).send(`이미 존재하는 아이디입니다 : ${userid}`);
-            return;
-        }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = { userid, password: hashedPassword };
-        await createUser(newUser);
+    const { userid, password, passwordcheck, email, nickname, birthdate, gender } = req.body;
 
-        const token = generateToken({ userid: newUser.userid });
-        res.cookie('auth_token', token, { httpOnly: true });
-        res.redirect('/userprofile.html');
-    } else {
+    if (password !== passwordcheck) {
         res.status(400).send('비밀번호가 일치하지 않습니다.');
+        return;
+    }
+
+    const user = await fetchUser(userid);
+    if (user) {
+        res.status(400).send(`이미 존재하는 아이디입니다 : ${userid}`);
+        return;
+    }
+
+    // 비밀번호 해싱 및 사용자 생성
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = { userid, password: hashedPassword, email, nickname, birthdate, gender };
+    await createUser(newUser);
+
+    const token = generateToken({ userid: newUser.userid });
+    res.cookie('auth_token', token, { httpOnly: true });
+    res.redirect('/');
+});
+// 중복 확인 API
+app.post('/check-duplicate', async (req, res) => {
+    const { userid } = req.body;
+    const user = await fetchUser(userid);
+    if (user) {
+        res.status(400).send(`이미 존재하는 아이디입니다 : ${userid}`);
+    } else {
+        res.status(200).send('사용할 수 있는 아이디입니다.');
     }
 });
 
@@ -162,11 +173,16 @@ app.post('/userprofile', authenticateJWT, async (req, res) => {
     }
 });
 
+function splitSummonerAndTag(input) {
+    const [summonerName, tag = 'kr1'] = input.split('#');
+    return { summonerName, tag };
+}
 //라이엇 정보 가져오기
-app.get('/summonerInfo', authenticateJWT, async (req, res) => {
+app.post('/summonerInfo', authenticateJWT, async (req, res) => {
     const userData = req.user;
     if (userData) {
-        const { summonerName, tag } = req.body;
+        const { summoner } = req.body;
+        const { summonerName, tag } = splitSummonerAndTag(summoner);
         try {
             const summonerprofile = {
                 userid: userData.userid,
@@ -205,6 +221,73 @@ app.get('/mypage', authenticateJWT, async (req, res) => {
     }
 });
 
-app.get('/chat', (req, res) => {
-    res.sendFile(__dirname + '/public/chat.html');
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.NODEMAILER_USER,
+        pass: process.env.NODEMAILER_PASSWORD,
+    },
+});
+
+
+app.post('/request-password-reset', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // 이메일로 사용자 확인
+        const user = await fetchUserByemail(email);
+        if (!user) {
+            return res.status(404).send('가입되지 않은 이메일입니다.');
+        }
+
+        // JWT 토큰 생성 (유효 시간: 15분)
+        const token = generateToken({ email }, '5m');
+
+        // 비밀번호 변경 링크 생성
+        const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+
+        // 이메일 전송
+        await transporter.sendMail({
+            from: process.env.NODEMAILER_USER,
+            to: email,
+            subject: '비밀번호 변경 요청',
+            text: `비밀번호를 변경하려면 다음 링크를 클릭하세요: ${resetLink}`,
+        });
+
+        res.send('비밀번호 변경 링크가 이메일로 전송되었습니다.');
+    } catch (error) {
+        console.error('Error requesting password reset:', error);
+        res.status(500).send('비밀번호 변경 요청 중 오류가 발생했습니다.');
+    }
+});
+
+// 비밀번호 변경 페이지
+app.get('/reset-password', (req, res) => {
+    const filePath = path.join(__dirname, 'public', 'reset-password.html');
+    res.sendFile(filePath);
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    try {
+        // 토큰 검증
+        const decoded = verifyToken(token);
+        if (!decoded) {
+            return res.status(400).send('유효하지 않거나 만료된 링크입니다.');
+        }
+
+        // 비밀번호 해싱 및 업데이트
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const result = await updatePassword(decoded.email, hashedPassword);
+
+        if (result.matchedCount > 0) {
+            return res.send('비밀번호가 성공적으로 변경되었습니다.');
+        } else {
+            return res.status(400).send('사용자를 찾을 수 없습니다.');
+        }
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        return res.status(500).send('비밀번호 변경 중 오류가 발생했습니다.');
+    }
 });
